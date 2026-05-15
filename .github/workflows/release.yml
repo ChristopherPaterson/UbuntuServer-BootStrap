@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Install shfmt
+        run: |
+          curl -fsSL https://github.com/mvdan/sh/releases/latest/download/shfmt_$(curl -fsSL https://api.github.com/repos/mvdan/sh/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"v\([^"]*\)".*/\1/')_linux_amd64 \
+            -o /usr/local/bin/shfmt
+          chmod +x /usr/local/bin/shfmt
+
+      - name: Build
+        run: make lint build
+
+      - name: Extract version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Extract changelog section
+        id: changelog
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          # Extract text between this version's heading and the next.
+          body=$(awk "/^## \[$version\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
+          printf 'body<<CHANGELOG_EOF\n%s\nCHANGELOG_EOF\n' "$body" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.body }}
+          files: |
+            build/build-template.sh
+            build/build-template.sh.sha256
+            build/firstboot-config.sh
+            build/firstboot-config.sh.sha256
+            build/install.sh
+            build/install.sh.sha256

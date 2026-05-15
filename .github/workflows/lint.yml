@@ -1,0 +1,37 @@
+name: Lint & Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Install shfmt
+        run: |
+          curl -fsSL https://github.com/mvdan/sh/releases/latest/download/shfmt_$(curl -fsSL https://api.github.com/repos/mvdan/sh/releases/latest | grep '"tag_name"' | head -1 | sed 's/.*"v\([^"]*\)".*/\1/')_linux_amd64 \
+            -o /usr/local/bin/shfmt
+          chmod +x /usr/local/bin/shfmt
+          shfmt --version
+
+      - name: Lint
+        run: make lint
+
+      - name: Build
+        run: make build
+
+      - name: Syntax check — built artefacts
+        run: |
+          bash -n build/build-template.sh
+          bash -n build/firstboot-config.sh
+
+      - name: shellcheck — built artefacts and install.sh
+        run: |
+          shellcheck -S warning build/build-template.sh build/firstboot-config.sh install.sh
