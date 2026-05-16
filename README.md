@@ -2,7 +2,7 @@
 
 Build a hardened, cyberpunk-themed Ubuntu template for Proxmox VE, with a guided first-boot wizard on every clone.
 
-[![Lint & Build](https://github.com/christopherpaterson/proxmox-ubuntu-template-builder/actions/workflows/lint.yml/badge.svg)](https://github.com/christopherpaterson/proxmox-ubuntu-template-builder/actions/workflows/lint.yml)
+[![Lint & Build](https://github.com/ChristopherPaterson/UbuntuServer-BootStrap/actions/workflows/lint.yml/badge.svg)](https://github.com/ChristopherPaterson/UbuntuServer-BootStrap/actions/workflows/lint.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ---
@@ -20,7 +20,7 @@ The first-boot wizard greets every clone with a Neuromancer boot sequence, walks
 **Recommended — pinned release:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/christopherpaterson/proxmox-ubuntu-template-builder/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/install.sh \
   | sudo INSTALL_VERSION=v0.1.0 bash
 ```
 
@@ -29,7 +29,7 @@ Run this as root on a freshly installed Ubuntu Server VM. The script downloads a
 **Bleeding edge — latest main:**
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/christopherpaterson/proxmox-ubuntu-template-builder/main/install.sh \
+curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/install.sh \
   | sudo INSTALL_REF=main bash
 ```
 

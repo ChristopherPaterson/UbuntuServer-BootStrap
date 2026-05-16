@@ -3,11 +3,11 @@
 # install.sh — Remote bootstrap for proxmox-ubuntu-template-builder.
 #
 # Usage (recommended — pinned release):
-#   curl -fsSL https://raw.githubusercontent.com/christopherpaterson/proxmox-ubuntu-template-builder/main/install.sh \
+#   curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/install.sh \
 #     | sudo INSTALL_VERSION=v0.1.0 bash
 #
 # Usage (bleeding edge — latest main):
-#   curl -fsSL https://raw.githubusercontent.com/christopherpaterson/proxmox-ubuntu-template-builder/main/install.sh \
+#   curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/install.sh \
 #     | sudo INSTALL_REF=main bash
 #
 # Environment variables:
@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-REPO="christopherpaterson/proxmox-ubuntu-template-builder"
+REPO="ChristopherPaterson/UbuntuServer-BootStrap"
 RAW_BASE="https://raw.githubusercontent.com/${REPO}"
 API_BASE="https://api.github.com/repos/${REPO}"
 
