@@ -343,28 +343,47 @@ if [[ "$EXISTING_COUNT" -eq 0 ]] || confirm "Register another key?"; then
   note "Paste the public key. Single line. ssh-ed25519 or ssh-rsa."
   echo
 
-  NEW_KEY=$(gum input \
-    --header.foreground $NEON_PINK \
-    --header "▸ public key" \
-    --placeholder "ssh-ed25519 AAAA... handle@workstation" \
-    --width 80 \
-    --prompt "  ╳  " \
-    --prompt.foreground $NEON_PINK \
-    --cursor.foreground $CYAN)
+  while true; do
+    NEW_KEY=$(gum input \
+      --header.foreground $NEON_PINK \
+      --header "▸ public key" \
+      --placeholder "ssh-ed25519 AAAA... handle@workstation" \
+      --width 80 \
+      --prompt "  ╳  " \
+      --prompt.foreground $NEON_PINK \
+      --cursor.foreground $CYAN)
 
-  if [[ -n "$NEW_KEY" ]] && echo "$NEW_KEY" | grep -qE '^(ssh-|ecdsa-|sk-)'; then
-    mkdir -p "$INVOKING_HOME/.ssh"
-    echo "$NEW_KEY" >>"$AUTH_KEYS"
-    chown -R "$INVOKING_USER:$INVOKING_USER" "$INVOKING_HOME/.ssh"
-    chmod 700 "$INVOKING_HOME/.ssh"
-    chmod 600 "$AUTH_KEYS"
-    ok "Credential registered"
-    EXISTING_COUNT=$((EXISTING_COUNT + 1))
-  elif [[ -n "$NEW_KEY" ]]; then
-    err "Malformed key signature — rejected"
-  else
-    muted "  No key entered"
-  fi
+    if [[ -z "$NEW_KEY" ]]; then
+      muted "  No key entered — password authentication retained"
+      break
+    elif echo "$NEW_KEY" | grep -qE '^(ssh-|ecdsa-|sk-)'; then
+      mkdir -p "$INVOKING_HOME/.ssh"
+      echo "$NEW_KEY" >>"$AUTH_KEYS"
+      chown -R "$INVOKING_USER:$INVOKING_USER" "$INVOKING_HOME/.ssh"
+      chmod 700 "$INVOKING_HOME/.ssh"
+      chmod 600 "$AUTH_KEYS"
+      ok "Credential registered"
+      EXISTING_COUNT=$((EXISTING_COUNT + 1))
+      break
+    else
+      err "Malformed key signature — rejected"
+      echo
+      RETRY_CHOICE=$(gum choose \
+        --header.foreground $NEON_PINK \
+        --header "▸ what next?" \
+        --cursor "╳ " \
+        --cursor.foreground $NEON_PINK \
+        --selected.foreground $CYAN \
+        --selected.background 16 \
+        "Retry" \
+        "Skip (retain password auth)")
+      if [[ "$RETRY_CHOICE" == "Skip (retain password auth)" ]]; then
+        muted "  Skipped — password authentication retained"
+        break
+      fi
+      echo
+    fi
+  done
 else
   muted "  Existing credentials retained"
 fi
