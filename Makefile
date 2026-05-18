@@ -1,12 +1,13 @@
 SHELL := /usr/bin/env bash
 
-SCRIPTS := scripts/build-template.sh scripts/firstboot-config.sh install.sh
+SCRIPTS := scripts/build-template.sh scripts/firstboot-config.sh scripts/configure-server.sh install.sh
 BUILD_DIR := build
 EMBED := $(BUILD_DIR)/embed.sh
 
-BUILT_TEMPLATE  := $(BUILD_DIR)/build-template.sh
-BUILT_FIRSTBOOT := $(BUILD_DIR)/firstboot-config.sh
-BUILT_INSTALL   := $(BUILD_DIR)/install.sh
+BUILT_TEMPLATE    := $(BUILD_DIR)/build-template.sh
+BUILT_FIRSTBOOT   := $(BUILD_DIR)/firstboot-config.sh
+BUILT_CONFIGURE   := $(BUILD_DIR)/configure-server.sh
+BUILT_INSTALL     := $(BUILD_DIR)/install.sh
 
 .PHONY: all lint build clean release demo
 
@@ -23,7 +24,7 @@ lint:
 
 # --- build: embed firstboot, write artefacts + SHA256 --------------------
 
-build: $(BUILT_TEMPLATE) $(BUILT_FIRSTBOOT) $(BUILT_INSTALL)
+build: $(BUILT_TEMPLATE) $(BUILT_FIRSTBOOT) $(BUILT_CONFIGURE) $(BUILT_INSTALL)
 	@echo "[build] done — artefacts in $(BUILD_DIR)/"
 
 $(BUILT_TEMPLATE): scripts/build-template.sh scripts/firstboot-config.sh $(EMBED)
@@ -33,6 +34,11 @@ $(BUILT_TEMPLATE): scripts/build-template.sh scripts/firstboot-config.sh $(EMBED
 	@echo "[build] $@ — SHA256: $$(cat $@.sha256)"
 
 $(BUILT_FIRSTBOOT): scripts/firstboot-config.sh
+	@cp $< $@
+	@sha256sum $@ | awk '{print $$1}' > $@.sha256
+	@echo "[build] $@ — SHA256: $$(cat $@.sha256)"
+
+$(BUILT_CONFIGURE): scripts/configure-server.sh
 	@cp $< $@
 	@sha256sum $@ | awk '{print $$1}' > $@.sha256
 	@echo "[build] $@ — SHA256: $$(cat $@.sha256)"
