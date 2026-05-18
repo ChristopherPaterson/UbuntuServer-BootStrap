@@ -203,14 +203,7 @@ datum "timezone" "$(timedatectl show -p Timezone --value)"
 datum "kernel" "$(uname -r)"
 echo
 
-if ! gum confirm "JACK IN?" \
-  --affirmative "JACK IN" \
-  --negative "ABORT" \
-  --default \
-  --selected.background $NEON_PINK \
-  --selected.foreground 16 \
-  --unselected.foreground $GHOST \
-  --prompt.foreground $CYAN; then
+if ! confirm "JACK IN?"; then
   warn "Sequence aborted by operator"
   exit 0
 fi
