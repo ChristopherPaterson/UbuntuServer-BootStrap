@@ -3,14 +3,23 @@
 # configure-server.sh — Standalone Ubuntu server configurator.
 #
 # Run directly on a clean Ubuntu server (no template required):
+#   curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/scripts/configure-server.sh -o configure-server.sh
 #   sudo bash configure-server.sh
-#   curl -fsSL https://raw.githubusercontent.com/.../configure-server.sh | sudo bash
 #
 # Installs prerequisites (gum, ufw, etc.) then launches the interactive
 # six-stage configuration wizard. Safe to re-run.
 #
 
 set -uo pipefail
+
+# curl | bash pipes the script as stdin, leaving no TTY for interactive prompts.
+if [[ ! -t 0 ]]; then
+  echo "ERROR: interactive terminal required — cannot run via pipe." >&2
+  echo "Download and run instead:" >&2
+  echo "  curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/scripts/configure-server.sh -o configure-server.sh" >&2
+  echo "  sudo bash configure-server.sh" >&2
+  exit 1
+fi
 
 if [[ $EUID -ne 0 ]]; then
   echo "ICE LOCKOUT: must run as root." >&2
