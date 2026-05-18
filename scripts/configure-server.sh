@@ -206,7 +206,7 @@ echo
 if ! gum confirm "JACK IN?" \
   --affirmative "JACK IN" \
   --negative "ABORT" \
-  --default yes \
+  --default \
   --selected.background $NEON_PINK \
   --selected.foreground 16 \
   --unselected.foreground $GHOST \
