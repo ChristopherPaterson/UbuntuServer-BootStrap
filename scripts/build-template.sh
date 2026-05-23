@@ -86,6 +86,17 @@ ufw allow 22/tcp
 ufw --force enable
 
 # --------------------------------------------------------------------------
+log "Capping systemd-networkd-wait-online timeout"
+# --------------------------------------------------------------------------
+# Without this the service waits indefinitely on boot, causing a >1 minute
+# hang on every clone. 10 s is enough for the primary NIC to come up.
+mkdir -p /etc/systemd/system/systemd-networkd-wait-online.service.d
+cat >/etc/systemd/system/systemd-networkd-wait-online.service.d/timeout.conf <<'EOF'
+[Service]
+TimeoutStartSec=10
+EOF
+
+# --------------------------------------------------------------------------
 log "Enabling unattended security upgrades"
 # --------------------------------------------------------------------------
 dpkg-reconfigure -plow -fnoninteractive unattended-upgrades || true
