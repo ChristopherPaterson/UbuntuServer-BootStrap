@@ -285,8 +285,8 @@ fi
 # STAGE 4 — crypto credential
 # ---------------------------------------------------------------------------
 section "STAGE 04/06 — CRYPTO CREDENTIAL"
-note "Load your public key so the deck recognises your signal."
-muted "  No password auth on this rig. Keys only."
+note "Register a public key for keyless SSH access."
+muted "  Keys are optional — password auth remains active until you harden."
 echo
 
 AUTH_KEYS="$INVOKING_HOME/.ssh/authorized_keys"
@@ -316,13 +316,26 @@ if [[ "$EXISTING_COUNT" -eq 0 ]] || confirm "Register another key?"; then
     chmod 700 "$INVOKING_HOME/.ssh"
     chmod 600 "$AUTH_KEYS"
     ok "Credential registered"
+    EXISTING_COUNT=$((EXISTING_COUNT + 1))
   elif [[ -n "$NEW_KEY" ]]; then
     err "Malformed key signature — rejected"
   else
-    muted "  No key entered"
+    muted "  No key entered — password authentication retained"
   fi
 else
   muted "  Existing credentials retained"
+fi
+
+echo
+note "SSH hardening — disable password auth and root login."
+muted "  Only enable after confirming your key works in another terminal."
+echo
+
+if [[ "$EXISTING_COUNT" -gt 0 ]] && confirm "Harden SSH (disable password + root login)?"; then
+  sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+  ok "SSH hardened — keys only, no root login"
+else
+  muted "  SSH config unchanged — password auth active"
 fi
 
 # ---------------------------------------------------------------------------
