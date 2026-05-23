@@ -135,7 +135,17 @@ trap 'rm -rf "$tmpdir"' EXIT
 script_file="${tmpdir}/build-template.sh"
 
 if [[ -n "$INSTALL_REF" ]]; then
-  curl -fsSL "$script_url" -o "$script_file"
+  # The source build-template.sh contains __FIRSTBOOT_PLACEHOLDER__ which must
+  # be replaced with the firstboot-config.sh content before execution.
+  # Replicate what `make build` does: download all three files, run embed.sh.
+  raw_base="${RAW_BASE}/${INSTALL_REF}"
+  echo "INFO: downloading source files from ref '${INSTALL_REF}'..."
+  curl -fsSL "${raw_base}/scripts/build-template.sh"  -o "${tmpdir}/build-template-src.sh"
+  curl -fsSL "${raw_base}/scripts/firstboot-config.sh" -o "${tmpdir}/firstboot-config.sh"
+  curl -fsSL "${raw_base}/build/embed.sh"              -o "${tmpdir}/embed.sh"
+  chmod +x "${tmpdir}/embed.sh"
+  echo "INFO: embedding firstboot-config.sh..."
+  "${tmpdir}/embed.sh" "${tmpdir}/build-template-src.sh" "${tmpdir}/firstboot-config.sh" "$script_file"
 else
   # Fetch release asset URL from the GitHub API JSON.
   release_json=$(curl -fsSL "${API_BASE}/releases/tags/${tag}")
