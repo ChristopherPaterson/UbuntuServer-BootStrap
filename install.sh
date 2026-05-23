@@ -85,7 +85,14 @@ printf '%b' "${YELLOW}Do not run this on a machine you intend to keep using dire
 printf '\n\n'
 
 printf 'Type %bYES%b to continue, or anything else to abort: ' "${BOLD}" "${RESET}"
-read -r confirmation </dev/tty || true
+confirmation=""
+if ! read -r confirmation </dev/tty 2>/dev/null; then
+  printf '\n\nERROR: cannot read from terminal.\n' >&2
+  printf 'Run by downloading the script directly instead:\n\n' >&2
+  printf '  curl -fsSL https://raw.githubusercontent.com/ChristopherPaterson/UbuntuServer-BootStrap/main/install.sh -o install.sh\n' >&2
+  printf '  sudo INSTALL_VERSION=v0.1.0 bash install.sh\n\n' >&2
+  exit 1
+fi
 
 if [[ "$confirmation" != "YES" ]]; then
   printf '\nAborted.\n'
