@@ -7,6 +7,7 @@
 #
 
 set -uo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
 SENTINEL=/var/lib/firstboot-done
 
@@ -31,18 +32,13 @@ INVOKING_USER="${SUDO_USER:-}"
 if [[ -z "$INVOKING_USER" || "$INVOKING_USER" == "root" ]]; then
   INVOKING_USER=$(awk -F: '$3>=1000 && $3<65534 {print $1; exit}' /etc/passwd)
 fi
+INVOKING_USER="${INVOKING_USER:-root}"
 INVOKING_HOME=$(getent passwd "$INVOKING_USER" | cut -d: -f6)
+INVOKING_HOME="${INVOKING_HOME:-/root}"
 
 # ---------------------------------------------------------------------------
 # Cyberpunk palette — high-contrast neon on black
 # ---------------------------------------------------------------------------
-# 198 = hot magenta       (primary — Tokyo neon)
-# 51  = cyan              (data streams)
-# 226 = electric yellow   (warnings, highlights)
-# 46  = matrix green      (success, online)
-# 196 = blood red         (errors, ICE)
-# 93  = deep purple       (accents, chrome)
-# 240 = ghost grey        (muted, decommissioned)
 
 NEON_PINK=198
 CYAN=51
@@ -80,7 +76,6 @@ muted() {
 }
 
 datum() {
-  # key/value: grey arrow, cyan label, magenta value
   printf '  \033[38;5;240m▸\033[0m \033[38;5;51m%-18s\033[0m \033[38;5;198m%s\033[0m\n' "$1" "$2"
 }
 
@@ -175,7 +170,6 @@ note "Pulling fresh patches from the corp repositories."
 muted "  Black ICE evolves. So do we."
 echo
 
-export DEBIAN_FRONTEND=noninteractive
 if spin "Querying package index..." apt-get update -qq; then
   ok "Package index synchronised"
 else
@@ -196,8 +190,11 @@ else
   ok "All systems current"
 fi
 
-systemctl enable --now qemu-guest-agent 2>/dev/null || true
-ok "QEMU guest agent online"
+if systemctl enable --now qemu-guest-agent 2>/dev/null; then
+  ok "QEMU guest agent online"
+else
+  warn "QEMU guest agent unavailable — not running under QEMU/KVM?"
+fi
 
 # ---------------------------------------------------------------------------
 # STAGE 2 — handle
@@ -300,40 +297,60 @@ if [[ "$EXISTING_COUNT" -eq 0 ]] || confirm "Register another key?"; then
   note "Paste the public key. Single line. ssh-ed25519 or ssh-rsa."
   echo
 
-  NEW_KEY=$(gum input \
-    --header.foreground $NEON_PINK \
-    --header "▸ public key" \
-    --placeholder "ssh-ed25519 AAAA... handle@workstation" \
-    --width 80 \
-    --prompt "  ╳  " \
-    --prompt.foreground $NEON_PINK \
-    --cursor.foreground $CYAN)
+  while true; do
+    NEW_KEY=$(gum input \
+      --header.foreground $NEON_PINK \
+      --header "▸ public key" \
+      --placeholder "ssh-ed25519 AAAA... handle@workstation" \
+      --width 80 \
+      --prompt "  ╳  " \
+      --prompt.foreground $NEON_PINK \
+      --cursor.foreground $CYAN)
 
-  if [[ -n "$NEW_KEY" ]] && echo "$NEW_KEY" | grep -qE '^(ssh-|ecdsa-|sk-)'; then
-    mkdir -p "$INVOKING_HOME/.ssh"
-    echo "$NEW_KEY" >>"$AUTH_KEYS"
-    chown -R "$INVOKING_USER:$INVOKING_USER" "$INVOKING_HOME/.ssh"
-    chmod 700 "$INVOKING_HOME/.ssh"
-    chmod 600 "$AUTH_KEYS"
-    ok "Credential registered"
-    EXISTING_COUNT=$((EXISTING_COUNT + 1))
-  elif [[ -n "$NEW_KEY" ]]; then
-    err "Malformed key signature — rejected"
-  else
-    muted "  No key entered — password authentication retained"
-  fi
+    if [[ -z "$NEW_KEY" ]]; then
+      muted "  No key entered — password authentication retained"
+      break
+    elif echo "$NEW_KEY" | grep -qE '^(ssh-|ecdsa-|sk-)'; then
+      mkdir -p "$INVOKING_HOME/.ssh"
+      echo "$NEW_KEY" >>"$AUTH_KEYS"
+      chown -R "$INVOKING_USER:$INVOKING_USER" "$INVOKING_HOME/.ssh"
+      chmod 700 "$INVOKING_HOME/.ssh"
+      chmod 600 "$AUTH_KEYS"
+      ok "Credential registered"
+      EXISTING_COUNT=$((EXISTING_COUNT + 1))
+      break
+    else
+      err "Malformed key signature — rejected"
+      echo
+      RETRY_CHOICE=$(gum choose \
+        --header.foreground $NEON_PINK \
+        --header "▸ what next?" \
+        --cursor "╳ " \
+        --cursor.foreground $NEON_PINK \
+        --selected.foreground $CYAN \
+        --selected.background 16 \
+        "Retry" \
+        "Skip (retain password auth)")
+      if [[ "$RETRY_CHOICE" == "Skip (retain password auth)" ]]; then
+        muted "  Skipped — password authentication retained"
+        break
+      fi
+      echo
+    fi
+  done
 else
   muted "  Existing credentials retained"
 fi
 
 echo
-note "SSH hardening — disable password auth and root login."
+note "SSH hardening — disable password auth (root login already blocked)."
 muted "  Only enable after confirming your key works in another terminal."
 echo
 
-if [[ "$EXISTING_COUNT" -gt 0 ]] && confirm "Harden SSH (disable password + root login)?"; then
+if [[ "$EXISTING_COUNT" -gt 0 ]] && confirm "Harden SSH (disable password auth)?"; then
   sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-  ok "SSH hardened — keys only, no root login"
+  spin "Reloading SSH daemon..." systemctl reload ssh
+  ok "SSH hardened — keys only"
 else
   muted "  SSH config unchanged — password auth active"
 fi
@@ -342,8 +359,10 @@ fi
 # STAGE 5 — ICE configuration
 # ---------------------------------------------------------------------------
 section "STAGE 05/06 — ICE CONFIGURATION"
-note "Firewall is up. Port 22 is open. Punch more holes if needed."
+note "Firewall is active. Punch more holes if needed."
 muted "  Intrusion Countermeasures Electronics (UFW)"
+echo
+ufw status numbered | gum style --margin "0 4" --foreground $GHOST
 echo
 
 while confirm "Open additional port?"; do
@@ -462,8 +481,6 @@ fi
 # Wrap-up
 # ---------------------------------------------------------------------------
 echo
-spin "Reloading SSH daemon..." systemctl reload ssh
-
 touch "$SENTINEL"
 
 sleep 1
@@ -492,6 +509,7 @@ datum "kernel" "$(uname -r)"
 datum "memory" "$MEM_TOTAL"
 datum "disk" "$DISK_USED"
 datum "uptime" "$(uptime -p | sed 's/^up //')"
+datum "qemu agent" "$(systemctl is-active qemu-guest-agent 2>/dev/null || echo inactive)"
 
 echo
 gum style --foreground $NEON_PINK --italic --align center --width 72 --margin "1 0" \

@@ -573,6 +573,7 @@ datum "kernel" "$(uname -r)"
 datum "memory" "$MEM_TOTAL"
 datum "disk" "$DISK_USED"
 datum "uptime" "$(uptime -p | sed 's/^up //')"
+datum "qemu agent" "$(systemctl is-active qemu-guest-agent 2>/dev/null || echo inactive)"
 
 echo
 gum style --foreground $NEON_PINK --italic --align center --width 72 --margin "1 0" \
