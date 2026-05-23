@@ -42,6 +42,7 @@ apt-get update -qq
 
 _log "Installing base packages"
 apt-get -y -qq install \
+  qemu-guest-agent \
   openssh-server \
   ufw \
   chrony \
@@ -58,7 +59,7 @@ apt-get -y -qq install \
   ca-certificates \
   gnupg
 
-systemctl enable --now ssh chrony 2>/dev/null || true
+systemctl enable --now ssh chrony qemu-guest-agent 2>/dev/null || true
 
 _log "Enabling unattended security upgrades"
 dpkg-reconfigure -plow -fnoninteractive unattended-upgrades 2>/dev/null || true
