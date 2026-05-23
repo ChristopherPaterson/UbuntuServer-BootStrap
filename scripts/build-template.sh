@@ -72,10 +72,9 @@ log "Setting timezone to Australia/Sydney"
 timedatectl set-timezone Australia/Sydney
 
 # --------------------------------------------------------------------------
-log "Hardening SSH"
+log "Hardening SSH (root login disabled; password auth left for firstboot wizard)"
 # --------------------------------------------------------------------------
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
 sed -i 's/^#*PubkeyAuthentication.*/PubkeyAuthentication yes/' /etc/ssh/sshd_config
 
 # --------------------------------------------------------------------------
