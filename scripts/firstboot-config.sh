@@ -196,6 +196,9 @@ else
   ok "All systems current"
 fi
 
+systemctl enable --now qemu-guest-agent 2>/dev/null || true
+ok "QEMU guest agent online"
+
 # ---------------------------------------------------------------------------
 # STAGE 2 — handle
 # ---------------------------------------------------------------------------
